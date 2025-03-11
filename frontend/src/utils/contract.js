@@ -14,10 +14,34 @@ const CONTRACT_ABI = [
         "internalType": "uint256",
         "name": "_votingDuration",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_admin",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "candidateId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "name": "CandidateAdded",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -65,6 +89,69 @@ const CONTRACT_ABI = [
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "voter",
+        "type": "address"
+      }
+    ],
+    "name": "VoterRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "voter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "newName",
+        "type": "string"
+      }
+    ],
+    "name": "VoterRenamed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newVotingEnd",
+        "type": "uint256"
+      }
+    ],
+    "name": "VotingExtended",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_imageUrl",
+        "type": "string"
+      }
+    ],
+    "name": "addCandidate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "candidateCount",
     "outputs": [
@@ -93,12 +180,30 @@ const CONTRACT_ABI = [
         "type": "string"
       },
       {
+        "internalType": "string",
+        "name": "imageUrl",
+        "type": "string"
+      },
+      {
         "internalType": "uint256",
         "name": "voteCount",
         "type": "uint256"
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_additionalMinutes",
+        "type": "uint256"
+      }
+    ],
+    "name": "extendVoting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -124,9 +229,38 @@ const CONTRACT_ABI = [
         "type": "string"
       },
       {
+        "internalType": "string",
+        "name": "imageUrl",
+        "type": "string"
+      },
+      {
         "internalType": "uint256",
         "name": "voteCount",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "voter",
+        "type": "address"
+      }
+    ],
+    "name": "getVoterStatus",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "registered",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "voted",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -183,8 +317,45 @@ const CONTRACT_ABI = [
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      }
+    ],
     "name": "registerVoter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "voter",
+        "type": "address"
+      }
+    ],
+    "name": "removeVoter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "voter",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "newName",
+        "type": "string"
+      }
+    ],
+    "name": "renameVoter",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -233,6 +404,11 @@ const CONTRACT_ABI = [
         "internalType": "uint256",
         "name": "vote",
         "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -261,8 +437,8 @@ export const loadCandidates = async (contract) => {
   const count = await contract.candidateCount();
   const candidateList = [];
   for (let i = 0; i < count; i++) {
-    const [name, voteCount] = await contract.getCandidate(i);
-    candidateList.push({ id: i, name, voteCount: Number(voteCount) });
+    const [name, imageUrl, voteCount] = await contract.getCandidate(i);
+    candidateList.push({ id: i, name, imageUrl, voteCount: Number(voteCount) || 0 });
   }
   return candidateList;
 };
@@ -272,3 +448,5 @@ export const checkVoterStatus = async (contract, address) => {
   const registered = await contract.voters(address).then(v => v.registered);
   return { registered, voted };
 };
+
+export { CONTRACT_ABI, CONTRACT_ADDRESS };

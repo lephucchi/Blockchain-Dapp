@@ -11,14 +11,12 @@ async function main() {
 
   // Danh sách ứng cử viên mẫu
   const candidateNames = ["Candidate A", "Candidate B", "Candidate C"];
-  // Thời gian bỏ phiếu (10 phút)
-  const votingDuration = 10;
 
   // Lấy contract factory
   const SimpleVoting = await hre.ethers.getContractFactory("SimpleVoting");
   
   // Deploy hợp đồng
-  const votingContract = await SimpleVoting.deploy(candidateNames, votingDuration);
+  const votingContract = await SimpleVoting.deploy(candidateNames);
   
   // Chờ hợp đồng được deploy
   await votingContract.deployed();

@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.9"
+  },
+  "scripts": {
+  "start": "concurrently \"cd frontend && npm run dev\" \"cd smartcontract && npx hardhat run scripts/deploy.js --network localhost\""
+  }
+
+}

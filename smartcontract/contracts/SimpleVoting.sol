@@ -4,24 +4,17 @@ pragma solidity ^0.8.0;
 contract SimpleVoting {
     // Sự kiện
     event VoterRegistered(address voter);
+    event VoterRemoved(address voter);
+    event VoterRenamed(address voter, string newName);
     event VoteCast(address voter, uint candidateId);
     event ElectionFinalized(uint winningCandidateId);
-
-    // Quyền hạn
-    address public owner;
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner");
-        _;
-    }
-
-    // Giai đoạn
-    enum Phase { Registration, Voting, Finalized }
-    Phase public phase;
-    uint public votingEnd;
+    event CandidateAdded(uint candidateId, string name, string imageUrl);
+    event CandidateRemoved(uint candidateId);
 
     // Dữ liệu
     struct Candidate {
         string name;
+        string imageUrl;
         uint voteCount;
     }
     mapping(uint => Candidate) public candidates; // Mapping thay vì mảng
@@ -31,40 +24,43 @@ contract SimpleVoting {
         bool registered;
         bool voted;
         uint vote; // Lưu chỉ số ứng cử viên mà cử tri đã chọn
+        string name;
     }
     mapping(address => Voter) public voters;
 
     // Khởi tạo
-    constructor(string[] memory _candidateNames, uint _votingDuration) {
-        owner = msg.sender;
-        phase = Phase.Registration;
-        votingEnd = block.timestamp + (_votingDuration * 1 minutes);
-
+    constructor(string[] memory _candidateNames) {
         for (uint i = 0; i < _candidateNames.length; i++) {
-            candidates[i] = Candidate(_candidateNames[i], 0);
+            candidates[i] = Candidate(_candidateNames[i], "", 0);
             candidateCount++;
         }
     }
 
     // Đăng ký cử tri
-    function registerVoter() external {
-        require(phase == Phase.Registration, "Not in Registration phase");
+    function registerVoter(string memory _name) external {
         Voter storage sender = voters[msg.sender];
         require(!sender.registered, "Already registered");
         sender.registered = true;
+        sender.name = _name;
         emit VoterRegistered(msg.sender);
     }
 
-    // Bắt đầu giai đoạn bỏ phiếu
-    function startVotingPhase() external onlyOwner {
-        require(phase == Phase.Registration, "Not in Registration phase");
-        phase = Phase.Voting;
+    // Thêm ứng cử viên mới
+    function addCandidate(string memory _name, string memory _imageUrl) external {
+        candidates[candidateCount] = Candidate(_name, _imageUrl, 0);
+        emit CandidateAdded(candidateCount, _name, _imageUrl);
+        candidateCount++;
+    }
+
+    // Xóa ứng cử viên
+    function removeCandidate(uint candidateId) external {
+        require(candidateId < candidateCount, "Invalid candidate ID");
+        delete candidates[candidateId];
+        emit CandidateRemoved(candidateId);
     }
 
     // Người tham gia bỏ phiếu cho ứng cử viên
     function vote(uint candidateId) external {
-        require(phase == Phase.Voting, "Not in Voting phase");
-        require(block.timestamp < votingEnd, "Voting period ended");
         Voter storage sender = voters[msg.sender];
         require(sender.registered, "You are not registered");
         require(!sender.voted, "You have already voted");
@@ -79,11 +75,7 @@ contract SimpleVoting {
     }
 
     // Kết thúc bầu cử
-    function finalizeElection() external onlyOwner {
-        require(phase == Phase.Voting, "Not in Voting phase");
-        require(block.timestamp >= votingEnd, "Voting period not ended");
-        phase = Phase.Finalized;
-
+    function finalizeElection() external {
         uint winnerId = determineWinner();
         emit ElectionFinalized(winnerId);
     }
@@ -102,15 +94,50 @@ contract SimpleVoting {
     }
 
     // Lấy thông tin ứng cử viên
-    function getCandidate(uint id) external view returns (string memory name, uint voteCount) {
+    function getCandidate(uint id) external view returns (string memory name, string memory imageUrl, uint voteCount) {
         require(id < candidateCount, "Invalid candidate ID");
         Candidate memory c = candidates[id];
-        return (c.name, c.voteCount);
+        return (c.name, c.imageUrl, c.voteCount);
     }
 
     // Lấy thông tin phiếu bầu của cử tri
     function getVoterVote(address voter) external view returns (bool voted, uint candidateId) {
         Voter memory v = voters[voter];
         return (v.voted, v.vote);
+    }
+
+    // Kiểm tra trạng thái của cử tri
+    function getVoterStatus(address voter) external view returns (bool registered, bool voted) {
+        Voter memory v = voters[voter];
+        return (v.registered, v.voted);
+    }
+
+    // Thêm chức năng xóa cử tri
+    function removeVoter(address voter) external {
+        require(voters[voter].registered, "Voter not registered");
+        delete voters[voter];
+        emit VoterRemoved(voter);
+    }
+
+    // Thêm chức năng đổi tên cử tri
+    function renameVoter(address voter, string memory newName) external {
+        require(voters[voter].registered, "Voter not registered");
+        voters[voter].name = newName;
+        emit VoterRenamed(voter, newName);
+    }
+
+    // Lấy danh sách cử tri và phiếu bầu của họ
+    function getVoterList() external view returns (address[] memory, uint[] memory) {
+        address[] memory voterAddresses = new address[](candidateCount);
+        uint[] memory votes = new uint[](candidateCount);
+        uint index = 0;
+        for (uint i = 0; i < candidateCount; i++) {
+            if (voters[voterAddresses[i]].registered) {
+                voterAddresses[index] = voterAddresses[i];
+                votes[index] = voters[voterAddresses[i]].vote;
+                index++;
+            }
+        }
+        return (voterAddresses, votes);
     }
 }
