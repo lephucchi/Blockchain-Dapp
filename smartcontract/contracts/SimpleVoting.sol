@@ -55,7 +55,11 @@ contract SimpleVoting {
     // Xóa ứng cử viên
     function removeCandidate(uint candidateId) external {
         require(candidateId < candidateCount, "Invalid candidate ID");
-        delete candidates[candidateId];
+        for (uint i = candidateId; i < candidateCount - 1; i++) {
+            candidates[i] = candidates[i + 1];
+        }
+        delete candidates[candidateCount - 1];
+        candidateCount--;
         emit CandidateRemoved(candidateId);
     }
 

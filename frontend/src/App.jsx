@@ -12,15 +12,11 @@ function App() {
   const [topCandidates, setTopCandidates] = useState([]);
   const [newCandidateName, setNewCandidateName] = useState('');
   const [newCandidateImageUrl, setNewCandidateImageUrl] = useState('');
-  const [renameVoterAddress, setRenameVoterAddress] = useState('');
-  const [renameVoterNewName, setRenameVoterNewName] = useState('');
   const [removeCandidateId, setRemoveCandidateId] = useState('');
-  const [removeVoterAddress, setRemoveVoterAddress] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [voterList, setVoterList] = useState([]);
-
-  const adminAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+  const [votedCandidate, setVotedCandidate] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -32,6 +28,12 @@ function App() {
         setCandidates(candidates);
         const status = await checkVoterStatus(contract, account);
         setVoterStatus(status);
+        const [voterAddresses, votes] = await contract.getVoterList();
+        const voterList = voterAddresses.map((address, index) => ({
+          address,
+          vote: votes[index]
+        }));
+        setVoterList(voterList);
       }
     }
     fetchData();
@@ -78,6 +80,7 @@ function App() {
       await tx.wait();
       const status = await checkVoterStatus(contract, account);
       setVoterStatus(status);
+      setVotedCandidate(candidates.find(candidate => candidate.id === selectedCandidate));
     } else {
       alert('Please select a candidate to vote for.');
     }
@@ -95,36 +98,14 @@ function App() {
     }
   };
 
-  const renameVoter = async () => {
-    if (renameVoterAddress && renameVoterNewName) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const contract = getContract(signer);
-      const tx = await contract.renameVoter(renameVoterAddress, renameVoterNewName);
-      await tx.wait();
-    }
-  };
-
-  const removeCandidate = async () => {
-    if (removeCandidateId) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const contract = getContract(signer);
-      const tx = await contract.removeCandidate(removeCandidateId);
-      await tx.wait();
-      const candidates = await loadCandidates(contract);
-      setCandidates(candidates);
-    }
-  };
-
-  const removeVoter = async () => {
-    if (removeVoterAddress) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const contract = getContract(signer);
-      const tx = await contract.removeVoter(removeVoterAddress);
-      await tx.wait();
-    }
+  const removeCandidate = async (candidateId) => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const contract = getContract(signer);
+    const tx = await contract.removeCandidate(candidateId);
+    await tx.wait();
+    const candidates = await loadCandidates(contract);
+    setCandidates(candidates);
   };
 
   const checkAdminPassword = () => {
@@ -133,18 +114,6 @@ function App() {
     } else {
       alert('Incorrect password');
     }
-  };
-
-  const loadVoterList = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const contract = getContract(signer);
-    const [voterAddresses, votes] = await contract.getVoterList();
-    const voterList = voterAddresses.map((address, index) => ({
-      address,
-      vote: votes[index]
-    }));
-    setVoterList(voterList);
   };
 
   return (
@@ -166,11 +135,11 @@ function App() {
               <button onClick={registerVoter}>Register as Voter</button>
             </div>
           ) : voterStatus.voted ? (
-            <p>You have already voted.</p>
+            <p>You have already voted for {votedCandidate ? votedCandidate.name : 'a candidate'}.</p>
           ) : (
             <div>
               <h2>Candidates</h2>
-              <ul className="candidate-list">
+              <ul className="candidate-list-1">
                 {candidates.map((candidate) => (
                   <li key={candidate.id} className="candidate-item">
                     <p>{candidate.name} - {candidate.voteCount || 0} votes</p>
@@ -211,76 +180,42 @@ function App() {
                   />
                   <button onClick={addCandidate}>Add Candidate</button>
                 </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Voter Address"
-                    value={renameVoterAddress}
-                    onChange={(e) => setRenameVoterAddress(e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    placeholder="New Voter Name"
-                    value={renameVoterNewName}
-                    onChange={(e) => setRenameVoterNewName(e.target.value)}
-                  />
-                  <button onClick={renameVoter}>Rename Voter</button>
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Candidate ID"
-                    value={removeCandidateId}
-                    onChange={(e) => setRemoveCandidateId(e.target.value)}
-                  />
-                  <button onClick={removeCandidate}>Remove Candidate</button>
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Voter Address"
-                    value={removeVoterAddress}
-                    onChange={(e) => setRemoveVoterAddress(e.target.value)}
-                  />
-                  <button onClick={removeVoter}>Remove Voter</button>
-                </div>
-                <button onClick={finalizeElection}>Finalize Election</button>
-                <button onClick={loadVoterList}>Load Voter List</button>
-                <div className="voter-list">
-                  <h2>Voter List</h2>
-                  <ul>
-                    {voterList.map((voter, index) => (
-                      <li key={index}>
-                        {voter.address} voted for candidate ID: {voter.vote}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               </>
             )}
           </div>
-          <div className="candidate-list">
+          <div className="candidate-list-2">
             <h2>Candidates</h2>
-            <ul>
+            <ul className="candidate-list-1">
               {candidates.map((candidate) => (
+                <li key={candidate.id} className="candidate-item">
+                  <p>{candidate.name} - {candidate.voteCount} votes</p>
+                  {isAdmin && (
+                    <button onClick={() => removeCandidate(candidate.id)}>Remove Candidate</button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="results">
+            <h2>Top 10 Candidates</h2>
+            <ul>
+              {topCandidates.map((candidate) => (
                 <li key={candidate.id}>
                   {candidate.name} - {candidate.voteCount} votes
                 </li>
               ))}
             </ul>
           </div>
-          {topCandidates.length > 0 && (
-            <div className="results">
-              <h2>Top 10 Candidates</h2>
-              <ul>
-                {topCandidates.map((candidate) => (
-                  <li key={candidate.id}>
-                    {candidate.name} - {candidate.voteCount} votes
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className="voter-list">
+            <h2>Voter List</h2>
+            <ul>
+              {voterList.map((voter, index) => (
+                <li key={index}>
+                  {voter.address} voted for candidate ID: {voter.vote}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
     </div>

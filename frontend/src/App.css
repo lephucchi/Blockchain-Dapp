@@ -47,7 +47,8 @@ p {
   margin: 10px 0;
 }
 
-.candidate-list {
+.candidate-list,
+.candidate-list-2 {
   margin-top: 20px;
 }
 
