@@ -14,8 +14,7 @@ A decentralized application (DApp) for a simple voting system built on the Ether
 🔹 [Node.js](https://nodejs.org/) and npm  
 🔹 [MetaMask](https://metamask.io/) extension for your browser  
 🔹 An Ethereum test network (e.g., Rinkeby, Ropsten)  
-🔹 Hardhat 
-🔹 Vite 
+🔹 Hardhat
 
 ---
 
