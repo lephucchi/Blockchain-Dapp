@@ -16,6 +16,7 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [voterList, setVoterList] = useState([]);
   const [votedCandidate, setVotedCandidate] = useState(null);
+  const [electionFinalized, setElectionFinalized] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -68,6 +69,7 @@ function App() {
     const candidates = await loadCandidates(contract);
     const sortedCandidates = candidates.sort((a, b) => b.voteCount - a.voteCount).slice(0, 4);
     setTopCandidates(sortedCandidates);
+    setElectionFinalized(true);
   };
 
   const castVote = async () => {
@@ -80,6 +82,8 @@ function App() {
       const status = await checkVoterStatus(contract, account);
       setVoterStatus(status);
       setVotedCandidate(candidates.find(candidate => candidate.id === selectedCandidate));
+      const updatedCandidates = await loadCandidates(contract);
+      setCandidates(updatedCandidates);
     } else {
       alert('Please select a candidate to vote for.');
     }
@@ -109,11 +113,11 @@ function App() {
     <div className="App">
       <h1>Simple Voting DApp</h1>
       {!account ? (
-        <button onClick={connectWallet}>Connect Wallet</button>
+        <button onClick={connectWallet} disabled={electionFinalized}>Connect Wallet</button>
       ) : (
         <div>
           <p>Connected account: {account}</p>
-          {!voterStatus.registered ? (
+          {!voterStatus.registered && !electionFinalized ? (
             <div>
               <input
                 type="text"
@@ -132,13 +136,13 @@ function App() {
                     <h3>{candidate.name}</h3>
                     <p>{candidate.voteCount || 0} votes</p>
                     <p className="candidate_info">{candidate.info}</p>
-                    {!voterStatus.voted && (
+                    {!voterStatus.voted && !electionFinalized && (
                       <button onClick={() => setSelectedCandidate(candidate.id)}>Vote</button>
                     )}
                   </div>
                 ))}
               </div>
-              {!voterStatus.voted ? (
+              {!voterStatus.voted && !electionFinalized ? (
                 <button onClick={castVote} disabled={selectedCandidate === null}>
                   Cast Vote
                 </button>
@@ -147,62 +151,78 @@ function App() {
               )}
             </div>
           )}
-          <div className="admin-panel">
-            <h2>Admin Panel</h2>
-            <div>
-              <input
-                type="password"
-                placeholder="Enter admin password"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-              />
-              <button onClick={checkAdminPassword}>Submit</button>
-            </div>
-            {isAdmin && (
-              <>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Candidate Name"
-                    value={newCandidateName}
-                    onChange={(e) => setNewCandidateName(e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Candidate Information"
-                    value={newCandidateInfo}
-                    onChange={(e) => setNewCandidateInfo(e.target.value)}
-                  />
-                  <button onClick={addCandidate}>Add Candidate</button>
-                </div>
-                <div className="candidate-list-2">
-                  <h2>Candidates</h2>
-                  <div className="candidate-grid">
-                    {candidates.map((candidate) => (
-                      <div key={candidate.id} className="candidate-box">
-                        <h3>{candidate.name}</h3>
-                        <p>{candidate.voteCount} votes</p>
-                        <p className="candidate_info">{candidate.info}</p>
-                      </div>
-                    ))}
+          {electionFinalized && (
+            <div className="results">
+              <h2>Top 4 Candidates</h2>
+              <div className="candidate-grid">
+                {topCandidates.map((candidate) => (
+                  <div key={candidate.id} className="candidate-box">
+                    <h3>{candidate.name}</h3>
+                    <p>{candidate.voteCount} votes</p>
+                    <p className="candidate_info">{candidate.info}</p>
                   </div>
-                </div>
-                <button onClick={finalizeElection}>Finalize Election</button>
-              </>
-            )}
-          </div>
-          <div className="results">
-            <h2>Top 4 Candidates</h2>
-            <div className="candidate-grid">
-              {topCandidates.map((candidate) => (
-                <div key={candidate.id} className="candidate-box">
-                  <h3>{candidate.name}</h3>
-                  <p>{candidate.voteCount} votes</p>
-                  <p className="candidate_info">{candidate.info}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+          {!electionFinalized && (
+            <div className="admin-panel">
+              <h2>Admin Panel</h2>
+              <div>
+                <input
+                  type="password"
+                  placeholder="Enter admin password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                />
+                <button onClick={checkAdminPassword}>Submit</button>
+              </div>
+              {isAdmin && (
+                <>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Candidate Name"
+                      value={newCandidateName}
+                      onChange={(e) => setNewCandidateName(e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Candidate Information"
+                      value={newCandidateInfo}
+                      onChange={(e) => setNewCandidateInfo(e.target.value)}
+                    />
+                    <button onClick={addCandidate}>Add Candidate</button>
+                  </div>
+                  <div className="candidate-list-2">
+                    <h2>Candidates</h2>
+                    <div className="candidate-grid">
+                      {candidates.map((candidate) => (
+                        <div key={candidate.id} className="candidate-box">
+                          <h3>{candidate.name}</h3>
+                          <p>{candidate.voteCount} votes</p>
+                          <p className="candidate_info">{candidate.info}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={finalizeElection}>Finalize Election</button>
+                </>
+              )}
+            </div>
+          )}
+          {!electionFinalized && (
+            <div className="voter-list">
+              <h2>Voter List</h2>
+              <ul>
+                {voterList.map((voter, index) => (
+                  <li key={index}>
+                    {voter.address} voted for candidate ID: {voter.vote}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>
