@@ -94,10 +94,17 @@ function App() {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = getContract(signer);
-      const tx = await contract.addCandidate(newCandidateName, newCandidateInfo);
-      await tx.wait();
-      const candidates = await loadCandidates(contract);
-      setCandidates(candidates);
+      try {
+        const tx = await contract.addCandidate(newCandidateName, newCandidateInfo);
+        await tx.wait();
+        const candidates = await loadCandidates(contract);
+        setCandidates(candidates);
+      } catch (error) {
+        console.error("Error adding candidate:", error);
+        alert("Error adding candidate. Please try again.");
+      }
+    } else {
+      alert('Please enter candidate name and information.');
     }
   };
 
@@ -155,9 +162,9 @@ function App() {
             <div className="results">
               <h2>Top 4 Candidates</h2>
               <div className="candidate-grid">
-                {topCandidates.map((candidate) => (
+                {topCandidates.map((candidate, index) => (
                   <div key={candidate.id} className="candidate-box">
-                    <h3>{candidate.name}</h3>
+                    <h3>Top {index + 1}: {candidate.name}</h3>
                     <p>{candidate.voteCount} votes</p>
                     <p className="candidate_info">{candidate.info}</p>
                   </div>
