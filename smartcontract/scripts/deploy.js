@@ -10,7 +10,7 @@ async function main() {
   console.log("Account balance:", hre.ethers.utils.formatEther(balance), "ETH");
 
   // Danh sách ứng cử viên mẫu
-  const candidateNames = ["Candidate A", "Candidate B", "Candidate C"];
+  const candidateNames = ["Toàn", "Tuyên", "Tuân"];
 
   // Lấy contract factory
   const SimpleVoting = await hre.ethers.getContractFactory("SimpleVoting");

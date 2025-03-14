@@ -96,19 +96,6 @@ const CONTRACT_ABI = [
         "internalType": "address",
         "name": "voter",
         "type": "address"
-      }
-    ],
-    "name": "VoterRemoved",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "voter",
-        "type": "address"
       },
       {
         "indexed": false,
@@ -142,7 +129,7 @@ const CONTRACT_ABI = [
       },
       {
         "internalType": "string",
-        "name": "_imageUrl",
+        "name": "_info",
         "type": "string"
       }
     ],
@@ -181,7 +168,7 @@ const CONTRACT_ABI = [
       },
       {
         "internalType": "string",
-        "name": "imageUrl",
+        "name": "info",
         "type": "string"
       },
       {
@@ -230,7 +217,7 @@ const CONTRACT_ABI = [
       },
       {
         "internalType": "string",
-        "name": "imageUrl",
+        "name": "info",
         "type": "string"
       },
       {
@@ -437,8 +424,8 @@ export const loadCandidates = async (contract) => {
   const count = await contract.candidateCount();
   const candidateList = [];
   for (let i = 0; i < count; i++) {
-    const [name, imageUrl, voteCount] = await contract.getCandidate(i);
-    candidateList.push({ id: i, name, imageUrl, voteCount: Number(voteCount) || 0 });
+    const [name, info, voteCount] = await contract.getCandidate(i);
+    candidateList.push({ id: i, name, info, voteCount: Number(voteCount) || 0 });
   }
   return candidateList;
 };

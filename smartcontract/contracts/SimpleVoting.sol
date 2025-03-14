@@ -4,17 +4,15 @@ pragma solidity ^0.8.0;
 contract SimpleVoting {
     // Sự kiện
     event VoterRegistered(address voter);
-    event VoterRemoved(address voter);
     event VoterRenamed(address voter, string newName);
     event VoteCast(address voter, uint candidateId);
     event ElectionFinalized(uint winningCandidateId);
-    event CandidateAdded(uint candidateId, string name, string imageUrl);
-    event CandidateRemoved(uint candidateId);
+    event CandidateAdded(uint candidateId, string name, string info);
 
     // Dữ liệu
     struct Candidate {
         string name;
-        string imageUrl;
+        string info;
         uint voteCount;
     }
     mapping(uint => Candidate) public candidates; // Mapping thay vì mảng
@@ -46,9 +44,9 @@ contract SimpleVoting {
     }
 
     // Thêm ứng cử viên mới
-    function addCandidate(string memory _name, string memory _imageUrl) external {
-        candidates[candidateCount] = Candidate(_name, _imageUrl, 0);
-        emit CandidateAdded(candidateCount, _name, _imageUrl);
+    function addCandidate(string memory _name, string memory _info) external {
+        candidates[candidateCount] = Candidate(_name, _info, 0);
+        emit CandidateAdded(candidateCount, _name, _info);
         candidateCount++;
     }
 
@@ -60,7 +58,6 @@ contract SimpleVoting {
         }
         delete candidates[candidateCount - 1];
         candidateCount--;
-        emit CandidateRemoved(candidateId);
     }
 
     // Người tham gia bỏ phiếu cho ứng cử viên
@@ -98,10 +95,10 @@ contract SimpleVoting {
     }
 
     // Lấy thông tin ứng cử viên
-    function getCandidate(uint id) external view returns (string memory name, string memory imageUrl, uint voteCount) {
+    function getCandidate(uint id) external view returns (string memory name, string memory info, uint voteCount) {
         require(id < candidateCount, "Invalid candidate ID");
         Candidate memory c = candidates[id];
-        return (c.name, c.imageUrl, c.voteCount);
+        return (c.name, c.info, c.voteCount);
     }
 
     // Lấy thông tin phiếu bầu của cử tri
@@ -114,13 +111,6 @@ contract SimpleVoting {
     function getVoterStatus(address voter) external view returns (bool registered, bool voted) {
         Voter memory v = voters[voter];
         return (v.registered, v.voted);
-    }
-
-    // Thêm chức năng xóa cử tri
-    function removeVoter(address voter) external {
-        require(voters[voter].registered, "Voter not registered");
-        delete voters[voter];
-        emit VoterRemoved(voter);
     }
 
     // Thêm chức năng đổi tên cử tri

@@ -11,8 +11,7 @@ function App() {
   const [account, setAccount] = useState(null);
   const [topCandidates, setTopCandidates] = useState([]);
   const [newCandidateName, setNewCandidateName] = useState('');
-  const [newCandidateImageUrl, setNewCandidateImageUrl] = useState('');
-  const [removeCandidateId, setRemoveCandidateId] = useState('');
+  const [newCandidateInfo, setNewCandidateInfo] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [voterList, setVoterList] = useState([]);
@@ -67,7 +66,7 @@ function App() {
     const tx = await contract.finalizeElection();
     await tx.wait();
     const candidates = await loadCandidates(contract);
-    const sortedCandidates = candidates.sort((a, b) => b.voteCount - a.voteCount).slice(0, 10);
+    const sortedCandidates = candidates.sort((a, b) => b.voteCount - a.voteCount).slice(0, 4);
     setTopCandidates(sortedCandidates);
   };
 
@@ -87,25 +86,15 @@ function App() {
   };
 
   const addCandidate = async () => {
-    if (newCandidateName && newCandidateImageUrl) {
+    if (newCandidateName && newCandidateInfo) {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = getContract(signer);
-      const tx = await contract.addCandidate(newCandidateName, newCandidateImageUrl);
+      const tx = await contract.addCandidate(newCandidateName, newCandidateInfo);
       await tx.wait();
       const candidates = await loadCandidates(contract);
       setCandidates(candidates);
     }
-  };
-
-  const removeCandidate = async (candidateId) => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const contract = getContract(signer);
-    const tx = await contract.removeCandidate(candidateId);
-    await tx.wait();
-    const candidates = await loadCandidates(contract);
-    setCandidates(candidates);
   };
 
   const checkAdminPassword = () => {
@@ -134,22 +123,28 @@ function App() {
               />
               <button onClick={registerVoter}>Register as Voter</button>
             </div>
-          ) : voterStatus.voted ? (
-            <p>You have already voted for {votedCandidate ? votedCandidate.name : 'a candidate'}.</p>
           ) : (
             <div>
               <h2>Candidates</h2>
-              <ul className="candidate-list-1">
+              <div className="candidate-grid">
                 {candidates.map((candidate) => (
-                  <li key={candidate.id} className="candidate-item">
-                    <p>{candidate.name} - {candidate.voteCount || 0} votes</p>
-                    <button onClick={() => setSelectedCandidate(candidate.id)}>Vote</button>
-                  </li>
+                  <div key={candidate.id} className="candidate-box">
+                    <h3>{candidate.name}</h3>
+                    <p>{candidate.voteCount || 0} votes</p>
+                    <p className="candidate_info">{candidate.info}</p>
+                    {!voterStatus.voted && (
+                      <button onClick={() => setSelectedCandidate(candidate.id)}>Vote</button>
+                    )}
+                  </div>
                 ))}
-              </ul>
-              <button onClick={castVote} disabled={selectedCandidate === null}>
-                Cast Vote
-              </button>
+              </div>
+              {!voterStatus.voted ? (
+                <button onClick={castVote} disabled={selectedCandidate === null}>
+                  Cast Vote
+                </button>
+              ) : (
+                <p>You have already voted for {votedCandidate ? votedCandidate.name : 'a candidate'}.</p>
+              )}
             </div>
           )}
           <div className="admin-panel">
@@ -174,47 +169,39 @@ function App() {
                   />
                   <input
                     type="text"
-                    placeholder="Candidate Image URL"
-                    value={newCandidateImageUrl}
-                    onChange={(e) => setNewCandidateImageUrl(e.target.value)}
+                    placeholder="Candidate Information"
+                    value={newCandidateInfo}
+                    onChange={(e) => setNewCandidateInfo(e.target.value)}
                   />
                   <button onClick={addCandidate}>Add Candidate</button>
                 </div>
+                <div className="candidate-list-2">
+                  <h2>Candidates</h2>
+                  <div className="candidate-grid">
+                    {candidates.map((candidate) => (
+                      <div key={candidate.id} className="candidate-box">
+                        <h3>{candidate.name}</h3>
+                        <p>{candidate.voteCount} votes</p>
+                        <p className="candidate_info">{candidate.info}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={finalizeElection}>Finalize Election</button>
               </>
             )}
           </div>
-          <div className="candidate-list-2">
-            <h2>Candidates</h2>
-            <ul className="candidate-list-1">
-              {candidates.map((candidate) => (
-                <li key={candidate.id} className="candidate-item">
-                  <p>{candidate.name} - {candidate.voteCount} votes</p>
-                  {isAdmin && (
-                    <button onClick={() => removeCandidate(candidate.id)}>Remove Candidate</button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
           <div className="results">
-            <h2>Top 10 Candidates</h2>
-            <ul>
+            <h2>Top 4 Candidates</h2>
+            <div className="candidate-grid">
               {topCandidates.map((candidate) => (
-                <li key={candidate.id}>
-                  {candidate.name} - {candidate.voteCount} votes
-                </li>
+                <div key={candidate.id} className="candidate-box">
+                  <h3>{candidate.name}</h3>
+                  <p>{candidate.voteCount} votes</p>
+                  <p className="candidate_info">{candidate.info}</p>
+                </div>
               ))}
-            </ul>
-          </div>
-          <div className="voter-list">
-            <h2>Voter List</h2>
-            <ul>
-              {voterList.map((voter, index) => (
-                <li key={index}>
-                  {voter.address} voted for candidate ID: {voter.vote}
-                </li>
-              ))}
-            </ul>
+            </div>
           </div>
         </div>
       )}
