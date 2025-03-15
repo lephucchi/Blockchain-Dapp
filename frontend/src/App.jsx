@@ -118,7 +118,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Simple Voting DApp</h1>
+      <h1>Voting DApp</h1>
       {!account ? (
         <button onClick={connectWallet} disabled={electionFinalized}>Connect Wallet</button>
       ) : (
@@ -220,7 +220,7 @@ function App() {
           )}
           {!electionFinalized && (
             <div className="voter-list">
-              <h2>Voter List</h2>
+              <h2></h2>
               <ul>
                 {voterList.map((voter, index) => (
                   <li key={index}>

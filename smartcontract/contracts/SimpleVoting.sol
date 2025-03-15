@@ -50,7 +50,6 @@ contract SimpleVoting {
         candidateCount++;
     }
 
-    // Xóa ứng cử viên
     function removeCandidate(uint candidateId) external {
         require(candidateId < candidateCount, "Invalid candidate ID");
         for (uint i = candidateId; i < candidateCount - 1; i++) {
@@ -113,7 +112,6 @@ contract SimpleVoting {
         return (v.registered, v.voted);
     }
 
-    // Thêm chức năng đổi tên cử tri
     function renameVoter(address voter, string memory newName) external {
         require(voters[voter].registered, "Voter not registered");
         voters[voter].name = newName;
